@@ -13,13 +13,15 @@ public class LaboratoriesTestUI extends JFrame {
         initComponents(args);
     }
 
-    private JTextField labCountText;
+    private JTextField labsCountText;
     private JTextField parameterNameText;
+    private JTextField parameterUnitsText;
     private JTextField successCriteriaText;
     private CardLayout cardLayout;
     private JPanel mainPanel;
-    private UUID uuid;
+    private UUID uuid = UUID.randomUUID();;
     private ArrayList<LabMeasure> labMeasures;
+    private final String cssStyle = "<p style=\"font-size:20px; text-align:center\">";
 
     private JButton createNextButton() {
         Font font = new Font("ARIAL", Font.BOLD, 20);
@@ -37,12 +39,44 @@ public class LaboratoriesTestUI extends JFrame {
         return nextButton;
     }
 
+    private JTextPane createUUIDTextPane() {
+        JTextPane UUIDTextPanel = new JTextPane();
+        UUIDTextPanel.setContentType("text/html"); // let the text pane know this is what you want
+        UUIDTextPanel.setText("<html>" + cssStyle + "Уникальный идентификатор теста:<br>" + uuid.toString() + "</p></html>"); // showing off
+        UUIDTextPanel.setEditable(false); // as before
+        UUIDTextPanel.setBackground(null); // this is the same as a JLabel
+        UUIDTextPanel.setBorder(null);
+        UUIDTextPanel.setMaximumSize(new Dimension(700, 100));
+        return UUIDTextPanel;
+    }
+
     private JPanel createUIDPanel() {
         JPanel uuidPanel = new JPanel();
-        uuidPanel.setLayout(new BoxLayout(uuidPanel, BoxLayout.Y_AXIS));
-        uuid = UUID.randomUUID();
-        uuidPanel.add(new JLabel("Уникальный идентификатор теста: " + uuid.toString()));
-        uuidPanel.add(createNextButton());
+        uuidPanel.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.insets = new Insets(10, 10, 5, 5);
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.gridwidth = 2;
+        uuidPanel.add(createUUIDTextPane(), c);
+
+        c.gridx = 0;
+        c.gridy = 2;
+        c.gridwidth = 2;
+        uuidPanel.add(Box.createVerticalStrut(40), c);
+
+        c.gridx = 0;
+        c.gridy = 3;
+        c.gridwidth = 1;
+        uuidPanel.add(Box.createVerticalStrut(40), c);
+
+        c.gridx = 1;
+        c.gridy = 3;
+        c.gridwidth = 1;
+        uuidPanel.add(createNextButton(), c);
         return uuidPanel;
     }
 
@@ -70,7 +104,8 @@ public class LaboratoriesTestUI extends JFrame {
         JPanel testResultsPanel = new JPanel();
         testResultsPanel.setLayout(new BoxLayout(testResultsPanel, BoxLayout.Y_AXIS));
         testResultsPanel.add(Box.createVerticalStrut(10));
-        testResultsPanel.add(new JLabel("Уникальный идентификатор теста: " + uuid.toString()));
+//        testResultsPanel.add(new JLabel("Уникальный идентификатор теста: " + uuid.toString()));
+        testResultsPanel.add(createUUIDTextPane());
         testResultsPanel.add(Box.createVerticalStrut(10));
         testResultsPanel.add(new JLabel("Результаты"));
 
@@ -81,19 +116,19 @@ public class LaboratoriesTestUI extends JFrame {
 
         JTextPane stringForMD5TextPane = new JTextPane();
         stringForMD5TextPane.setContentType("text/html"); // let the text pane know this is what you want
-        stringForMD5TextPane.setText("<html>Строка для контрольной суммы MD5: </html>"); // showing off
+        stringForMD5TextPane.setText("<html>" + cssStyle + "Строка для контрольной суммы MD5: </p></html>"); // showing off
         stringForMD5TextPane.setEditable(false); // as before
         stringForMD5TextPane.setBackground(null); // this is the same as a JLabel
         stringForMD5TextPane.setBorder(null);
 
         JTextPane MD5TextPane = new JTextPane();
         MD5TextPane.setContentType("text/html"); // let the text pane know this is what you want
-        MD5TextPane.setText("<html>MD5 контрольная сумма: </html>"); // showing off
+        MD5TextPane.setText("<html>" + cssStyle + "MD5 контрольная сумма: </p></html>"); // showing off
         MD5TextPane.setEditable(false); // as before
         MD5TextPane.setBackground(null); // this is the same as a JLabel
         MD5TextPane.setBorder(null);
 
-          testResultsPanel.add(meanValueLabel);
+        testResultsPanel.add(meanValueLabel);
         testResultsPanel.add(meanErrorLabel);
 
         testResultsPanel.add(Box.createVerticalStrut(10));
@@ -145,10 +180,10 @@ public class LaboratoriesTestUI extends JFrame {
                 }
                 md5String += String.format(successCriteriaText.getText());
 
-                stringForMD5TextPane.setText("<html>Строка для контрольной суммы MD5: " + md5String + "</html");
+                stringForMD5TextPane.setText("<html>" + cssStyle + "Строка для контрольной суммы MD5:<br>" + md5String + "</p></html");
                 try {
                     String md5Result = bytesToHex(MessageDigest.getInstance("MD5").digest(md5String.getBytes()));
-                    MD5TextPane.setText("<html>MD5 контрольная сумма: " + md5Result + "</html>");
+                    MD5TextPane.setText("<html>" + cssStyle + "MD5 контрольная сумма:<br>" + md5Result + "</p></html>");
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
                 }
@@ -173,88 +208,132 @@ public class LaboratoriesTestUI extends JFrame {
 
     private JPanel createLabResultsPanel(LabMeasure labMeasure) {
         JPanel labResultsPanel = new JPanel();
-        labResultsPanel.setLayout(new BoxLayout(labResultsPanel, BoxLayout.Y_AXIS));
+        labResultsPanel.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.insets = new Insets(10, 10, 5, 5);
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.gridwidth = 2;
+        c.gridheight = 2;
+        labResultsPanel.add(createUUIDTextPane(), c);
 
         Font font = new Font("ARIAL", Font.BOLD, 20);
 
-        JPanel labMeasurePanel = new JPanel();
-        labMeasurePanel.setLayout(new BoxLayout(labMeasurePanel, BoxLayout.X_AXIS));
+        JLabel labNumLabel = new JLabel("Измерение лаборатории " + Integer.toString(labMeasure.labNumber));
+        labNumLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 2;
+        c.gridwidth = 2;
+        c.gridheight = 1;
+        labResultsPanel.add(labNumLabel, c);
 
-        labMeasurePanel.add(new JLabel(parameterNameText.getText()));
+
+
+        JLabel labMeasureLabel = new JLabel(parameterNameText.getText() + ", " + parameterUnitsText.getText());
+        labMeasureLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 3;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        labResultsPanel.add(labMeasureLabel, c);
 
         labMeasure.labMeasureText = new JTextField("");
-        labMeasure.labMeasureText.setMaximumSize(new Dimension(200, 50));
-        labMeasurePanel.add(labMeasure.labMeasureText);
+        labMeasure.labMeasureText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 3;
+        labResultsPanel.add(labMeasure.labMeasureText, c);
 
-        JPanel labAccuracyPanel = new JPanel();
-        labAccuracyPanel.setLayout(new BoxLayout(labAccuracyPanel, BoxLayout.X_AXIS));
 
-        labAccuracyPanel.add(new JLabel("Погрешность измерения лаборатории"));
+        JLabel labAccuracyLabel = new JLabel("Погрешность измерения лаборатории");
+        labAccuracyLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 4;
+        labResultsPanel.add(labAccuracyLabel, c);
 
         labMeasure.labAccuracyText = new JTextField("");
-        labMeasure.labAccuracyText.setMaximumSize(new Dimension(200, 50));
-        labAccuracyPanel.add(labMeasure.labAccuracyText);
+        labMeasure.labAccuracyText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 4;
+        labResultsPanel.add(labMeasure.labAccuracyText, c);
 
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(new JLabel("Уникальный идентификатор теста: " + uuid.toString()));
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(new JLabel("Измерение лаборатории " + Integer.toString(labMeasure.labNumber)));
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(labMeasurePanel);
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(labAccuracyPanel);
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(createNextButton());
-        labResultsPanel.add(Box.createVerticalStrut(10));
-        labResultsPanel.add(Box.createGlue());
+
+        c.gridx = 1;
+        c.gridy = 6;
+        c.gridwidth = 1;
+        c.anchor = GridBagConstraints.PAGE_END;
+        labResultsPanel.add(createNextButton(), c);
+
         return labResultsPanel;
     }
 
     private JPanel createTestInfoPanel() {
-        JPanel testInfoPanel = new JPanel();
-        testInfoPanel.setLayout(new BoxLayout(testInfoPanel, BoxLayout.Y_AXIS));
+        JPanel testInfoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.insets = new Insets(10, 10, 5, 5);
 
         Font font = new Font("ARIAL", Font.BOLD, 20);
 
-        JPanel labCountPanel = new JPanel();
-        labCountPanel.setLayout(new BoxLayout(labCountPanel, BoxLayout.X_AXIS));
+        JLabel labsCountLabel = new JLabel("Число лабораторий");
+        labsCountLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 0;
+        testInfoPanel.add(labsCountLabel, c);
 
-        labCountPanel.add(new JLabel("Число лабораторий"));
+        labsCountText = new JTextField("3");
+        labsCountText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 0;
+        testInfoPanel.add(labsCountText, c);
 
-        labCountText = new JTextField("3");
-        labCountText.setMaximumSize(new Dimension(200, 50));
-        labCountPanel.add(labCountText);
+        JLabel measureParamLabel = new JLabel("Измеряемый параметр");
+        measureParamLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 1;
+        testInfoPanel.add(measureParamLabel, c);
 
-        JPanel parameterNamePanel = new JPanel();
-        parameterNamePanel.setLayout(new BoxLayout(parameterNamePanel, BoxLayout.X_AXIS));
+        parameterNameText = new JTextField("Электромагнитное излучение");
+        parameterNameText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 1;
+        testInfoPanel.add(parameterNameText, c);
 
-        parameterNamePanel.add(new JLabel("Измеряемый параметр, единицы измерения"));
+        JLabel measureUnitLabel = new JLabel("Единицы измерения");
+        measureUnitLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 2;
+        testInfoPanel.add(measureUnitLabel, c);
 
-        parameterNameText = new JTextField("Электромагнитное излучение, мкВт/см²");
-        parameterNameText.setMaximumSize(new Dimension(300, 50));
-        parameterNamePanel.add(parameterNameText);
+        parameterUnitsText = new JTextField("мкВт/см²");
+        parameterUnitsText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 2;
+        testInfoPanel.add(parameterUnitsText, c);
 
-        JPanel successCriteriaPanel = new JPanel();
-        successCriteriaPanel.setLayout(new BoxLayout(successCriteriaPanel, BoxLayout.X_AXIS));
+        JLabel successCriteriaLabel = new JLabel("Критерий оценки");
+        successCriteriaLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 3;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        testInfoPanel.add(successCriteriaLabel, c);
 
-        successCriteriaPanel.add(new JLabel("Критерий оценки"));
         successCriteriaText = new JTextField("1");
-        successCriteriaText.setMaximumSize(new Dimension(200, 50));
-        successCriteriaPanel.add(successCriteriaText);
+        successCriteriaText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 3;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        testInfoPanel.add(successCriteriaText, c);
 
-        testInfoPanel.add(Box.createVerticalStrut(10));
-        testInfoPanel.add(labCountPanel);
-        testInfoPanel.add(Box.createVerticalStrut(10));
-        testInfoPanel.add(parameterNamePanel);
-        testInfoPanel.add(Box.createVerticalStrut(10));
-        testInfoPanel.add(successCriteriaPanel);
-        testInfoPanel.add(Box.createVerticalStrut(10));
         JButton nextButton = createNextButton();
         nextButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 labMeasures = new ArrayList<>();
-                for (int i = 0; i < Integer.parseInt(labCountText.getText()); ++i) {
+                for (int i = 0; i < Integer.parseInt(labsCountText.getText()); ++i) {
                     LabMeasure measure = new LabMeasure(i + 1);
                     labMeasures.add(measure);
                     mainPanel.add(createLabResultsPanel(measure));
@@ -262,9 +341,16 @@ public class LaboratoriesTestUI extends JFrame {
                 mainPanel.add(createTestResultsPanel());
             }
         });
-        testInfoPanel.add(nextButton);
-        testInfoPanel.add(Box.createVerticalStrut(10));
-        testInfoPanel.add(Box.createGlue());
+        c.gridx = 0;
+        c.gridy = 4;
+        c.gridwidth = 2;
+        testInfoPanel.add(Box.createVerticalStrut(40), c);
+
+        c.gridx = 1;
+        c.gridy = 5;
+        c.gridwidth = 1;
+        c.anchor = GridBagConstraints.PAGE_END;
+        testInfoPanel.add(nextButton, c);
         return testInfoPanel;
     }
 
@@ -300,7 +386,6 @@ public class LaboratoriesTestUI extends JFrame {
         mainPanel.setLayout(cardLayout);
         mainPanel.add(createTestInfoPanel());
         mainPanel.add(createUIDPanel());
-
 
         basePanel.add(mainPanel);
         basePanel.add(Box.createVerticalStrut(20));
