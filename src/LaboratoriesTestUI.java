@@ -21,15 +21,20 @@ public class LaboratoriesTestUI extends JFrame {
     private JTextField successCriteriaText;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    private ArrayList<LabMeasure> labMeasures = new ArrayList<>();
     private UUID uuid = UUID.randomUUID();;
-    private ArrayList<LabMeasure> labMeasures;
     private final String cssStyle = "<p style=\"font-size:20px; text-align:center\">";
 
-    private boolean calculated = false;
-    private String md5String = "";
-    private String md5Result = "";
-    double meanValue = 0;
-    double meanSquareError = 0;
+    private LabTestCase testCase = new LabTestCase(0.0);
+
+    private static class LabMeasure {
+        int labNumber;
+        JTextField labMeasureText;
+        JTextField labAccuracyText;
+        LabMeasure(int labNumber) {
+            this.labNumber = labNumber;
+        }
+    }
 
     private JButton createNextButton() {
         Font font = new Font("ARIAL", Font.BOLD, 20);
@@ -105,47 +110,37 @@ public class LaboratoriesTestUI extends JFrame {
         return uuidPanel;
     }
 
-    private static class LabMeasure {
-        int labNumber;
-        JTextField labMeasureText;
-        JTextField labAccuracyText;
-        LabMeasure(int labNumber) {
-            this.labNumber = labNumber;
+    private void calculateResults() {
+        testCase = new LabTestCase(Double.parseDouble(successCriteriaText.getText()));
+        testCase.setPointNumber(0); // TODO implement point numbers;
+        for (LabMeasure measure : labMeasures) {
+            testCase.setLabMeasure(new LabTestCase.ValueError(Double.parseDouble(measure.labMeasureText.getText()),
+                    Double.parseDouble(measure.labAccuracyText.getText()), measure.labNumber));
         }
+        testCase.calculateResults();
     }
 
-    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
+
 
     private String createHTMLReport() {
 
         String report = "<html>" + cssStyle + createUUIDText() + "<br><br>";
 
-        report += "Среднее значение измерений: " + String.format("%.4f", meanValue) + "<br>";
-        report += "Среднеквадратичная погрешность: " + String.format("%.4f", meanSquareError) + "<br><br>";
+        report += "Среднее значение измерений: " + String.format("%.4f", testCase.getMeanValue()) + "<br>";
+        report += "Среднеквадратичная погрешность: " + String.format("%.4f", testCase.getMeanSquareError()) + "<br><br>";
 
-        for (int i = 0; i < labMeasures.size(); ++i) {
-            report += "Лаборатория номер " + Integer.toString(labMeasures.get(i).labNumber) + ". ";
-            if (calculated) {
-                double diff = Math.abs(Double.parseDouble(labMeasures.get(i).labMeasureText.getText()) -
-                        meanValue) / meanSquareError;
-                report += "Отклонение " + String.format("%.4f", diff) + ". Оценка результата: " +
-                        (diff < Double.parseDouble(successCriteriaText.getText()) ? " Уд." : " Неуд.");
+        for (LabTestCase.ValueError measure : testCase.getLabMeasures()) {
+            report += "Лаборатория номер " + Integer.toString(measure.labNumber) + ". ";
+            if (testCase.isCalculated()) {
+                report += "Отклонение " + String.format("%.4f", testCase.getDiff(measure)) + ". Оценка результата: " +
+                        (testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.");
             }
             report += "<br>";
         }
         report += "<br>";
 
-        report += "Строка для контрольной суммы MD5:<br>" + md5String + "<br>";
-        report += "MD5 контрольная сумма:<br>" + md5Result + "<br><br></p></html>";
+        report += "Строка для контрольной суммы MD5:<br>" + testCase.getMd5String() + "<br>";
+        report += "MD5 контрольная сумма:<br>" + testCase.getMd5Result() + "<br><br></p></html>";
         return report;
     }
 
@@ -200,133 +195,6 @@ public class LaboratoriesTestUI extends JFrame {
         exportButton.setFont(font);
         testResultsPanel.add(exportButton, c);
 
-        return testResultsPanel;
-    }
-
-    private class ValueError implements Comparable<ValueError> {
-        public double value, error;
-        public ValueError(double value, double error) {
-            this.value = value;
-            this.error = error;
-        }
-
-        @Override
-        public int compareTo(ValueError o) {
-            if (value < o.value) {
-                return -1;
-            }
-            if (value > o.value) {
-                return 1;
-            }
-            return Double.compare(error, o.error);
-        }
-    }
-
-    private void calculateResults() {
-        md5String = "";
-        md5Result = "";
-        ArrayList<ValueError> valueErrors = new ArrayList<>();
-        meanValue = 0;
-        meanSquareError = 0;
-
-        for (LabMeasure labMeasure : labMeasures) {
-            double value = Double.parseDouble(labMeasure.labMeasureText.getText());
-            double error = Double.parseDouble(labMeasure.labAccuracyText.getText());
-            meanValue += value;
-            meanSquareError += error * error;
-            valueErrors.add(new ValueError(value, error));
-        }
-        meanValue /= labMeasures.size();
-        meanSquareError = Math.sqrt(meanSquareError);
-
-        valueErrors.sort(ValueError::compareTo);
-        for (ValueError valueError : valueErrors) {
-            md5String += String.format("%.4f;%.4f;", valueError.value, valueError.error);
-        }
-        md5String += String.format("%.4f", Double.parseDouble(successCriteriaText.getText()));
-        try {
-            md5Result = bytesToHex(MessageDigest.getInstance("MD5").digest(md5String.getBytes()));
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        calculated = true;
-    }
-
-    private JPanel createTestResultsPanel() {
-        JPanel testResultsPanel = new JPanel();
-        testResultsPanel.setLayout(new BoxLayout(testResultsPanel, BoxLayout.Y_AXIS));
-        testResultsPanel.add(Box.createVerticalStrut(10));
-//        testResultsPanel.add(new JLabel("Уникальный идентификатор теста: " + uuid.toString()));
-        testResultsPanel.add(createUUIDTextPane());
-        testResultsPanel.add(Box.createVerticalStrut(10));
-        testResultsPanel.add(new JLabel("Результаты"));
-
-        testResultsPanel.add(Box.createVerticalStrut(10));
-        JLabel meanValueLabel = new JLabel("Среднее значение измерений:");
-        JLabel meanErrorLabel = new JLabel("Среднеквадратичная погрешность:");
-
-
-        JTextPane stringForMD5TextPane = new JTextPane();
-        stringForMD5TextPane.setContentType("text/html"); // let the text pane know this is what you want
-        stringForMD5TextPane.setText("<html>" + cssStyle + "Строка для контрольной суммы MD5: </p></html>"); // showing off
-        stringForMD5TextPane.setEditable(false); // as before
-        stringForMD5TextPane.setBackground(null); // this is the same as a JLabel
-        stringForMD5TextPane.setBorder(null);
-
-        JTextPane MD5TextPane = new JTextPane();
-        MD5TextPane.setContentType("text/html"); // let the text pane know this is what you want
-        MD5TextPane.setText("<html>" + cssStyle + "MD5 контрольная сумма: </p></html>"); // showing off
-        MD5TextPane.setEditable(false); // as before
-        MD5TextPane.setBackground(null); // this is the same as a JLabel
-        MD5TextPane.setBorder(null);
-
-        testResultsPanel.add(meanValueLabel);
-        testResultsPanel.add(meanErrorLabel);
-
-        testResultsPanel.add(Box.createVerticalStrut(10));
-
-        testResultsPanel.add(stringForMD5TextPane);
-        testResultsPanel.add(MD5TextPane);
-
-        testResultsPanel.add(Box.createVerticalStrut(10));
-        ArrayList<JLabel> labResultLabels = new ArrayList<JLabel>();
-        for (LabMeasure measure : labMeasures) {
-            JLabel labResultLabel = new JLabel("Лаборатория номер " + Integer.toString(measure.labNumber) + ".");
-            testResultsPanel.add(labResultLabel);
-            labResultLabels.add(labResultLabel);
-        }
-        testResultsPanel.add(Box.createVerticalStrut(10));
-
-
-        JPanel buttonsPanel = new JPanel();
-        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.X_AXIS));
-        JButton calculateButton = new JButton("Рассчитать результаты");
-        calculateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                calculateResults();
-
-                meanValueLabel.setText(meanValueLabel.getText() + " " + String.format("%.4f", meanValue));
-                meanErrorLabel.setText(meanErrorLabel.getText() + " " + String.format("%.4f", meanSquareError));
-
-                stringForMD5TextPane.setText("<html>" + cssStyle + "Строка для контрольной суммы MD5:<br>" + md5String + "</p></html");
-                MD5TextPane.setText("<html>" + cssStyle + "MD5 контрольная сумма:<br>" + md5Result + "</p></html>");
-
-                for (int i = 0; i < labMeasures.size(); ++i) {
-                    double diff = Math.abs(Double.parseDouble(labMeasures.get(i).labMeasureText.getText()) -
-                            meanValue) / meanSquareError;
-                    labResultLabels.get(i).setText(labResultLabels.get(i).getText() + " Отклонение " +
-                            String.format("%.4f", diff) + ". Оценка результата: " +
-                             (diff < Double.parseDouble(successCriteriaText.getText()) ? " Уд." : " Неуд."));
-                }
-            }
-        });
-
-        buttonsPanel.add(calculateButton);
-        buttonsPanel.add(Box.createHorizontalStrut(30));
-        buttonsPanel.add(new JButton("Экспорт в pdf"));
-
-        testResultsPanel.add(buttonsPanel);
         return testResultsPanel;
     }
 
@@ -468,7 +336,6 @@ public class LaboratoriesTestUI extends JFrame {
                     labMeasures.add(measure);
                     mainPanel.add(createLabResultsPanel(measure));
                 }
-//                mainPanel.add(createTestResultsPanel());
                 mainPanel.add(createHTMLTestResultsPanel());
             }
         });
@@ -516,7 +383,6 @@ public class LaboratoriesTestUI extends JFrame {
         cardLayout = new CardLayout();
         mainPanel.setLayout(cardLayout);
         mainPanel.add(createTestInfoPanel());
-//        mainPanel.add(createUIDPanel());
 
         basePanel.add(mainPanel);
         basePanel.add(Box.createVerticalStrut(20));
