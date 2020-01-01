@@ -2,10 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -19,11 +15,15 @@ public class LaboratoriesTestUI extends JFrame {
     private JTextField parameterNameText;
     private JTextField parameterUnitsText;
     private JTextField successCriteriaText;
+    private JTextField pointNumberText;
     private CardLayout cardLayout;
     private JPanel mainPanel;
+    private int pointNumber = 1;
     private ArrayList<LabMeasure> labMeasures = new ArrayList<>();
     private UUID uuid = UUID.randomUUID();;
-    private final String cssStyle = "<p style=\"font-size:20px; text-align:center\">";
+    private final String cssStyle = "<p style=\"font-size:16px; text-align:center\">";
+    private final String labPanelString = "labPanel";
+    private Font font = new Font("ARIAL", Font.BOLD, 20);
 
     private LabTestCase testCase = new LabTestCase(0.0);
 
@@ -37,7 +37,6 @@ public class LaboratoriesTestUI extends JFrame {
     }
 
     private JButton createNextButton() {
-        Font font = new Font("ARIAL", Font.BOLD, 20);
         JButton nextButton = new JButton("Далее");
         nextButton.setFont(font);
         nextButton.setFocusable(false);
@@ -67,52 +66,9 @@ public class LaboratoriesTestUI extends JFrame {
         return UUIDTextPanel;
     }
 
-    private JPanel createUIDPanel() {
-        JPanel uuidPanel = new JPanel();
-        uuidPanel.setLayout(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0.5;
-        c.insets = new Insets(10, 10, 5, 5);
-
-        c.gridx = 0;
-        c.gridy = 0;
-        c.gridwidth = 2;
-        uuidPanel.add(createUUIDTextPane(), c);
-
-        c.gridx = 0;
-        c.gridy = 2;
-        c.gridwidth = 2;
-        uuidPanel.add(Box.createVerticalStrut(40), c);
-
-        c.gridx = 0;
-        c.gridy = 3;
-        c.gridwidth = 1;
-        uuidPanel.add(Box.createVerticalStrut(40), c);
-
-        c.gridx = 1;
-        c.gridy = 3;
-        c.gridwidth = 1;
-        JButton nextButton = createNextButton();
-        nextButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-//                setMinimumSize(new Dimension(700, 600));
-            }
-        });
-        uuidPanel.add(nextButton, c);
-
-        c.gridx = 0;
-        c.gridy = 3;
-        c.gridwidth = 2;
-        uuidPanel.add(Box.createVerticalStrut(400), c);
-
-        return uuidPanel;
-    }
-
     private void calculateResults() {
         testCase = new LabTestCase(Double.parseDouble(successCriteriaText.getText()));
-        testCase.setPointNumber(0); // TODO implement point numbers;
+        testCase.setPointNumber(pointNumber);
         for (LabMeasure measure : labMeasures) {
             testCase.setLabMeasure(new LabTestCase.ValueError(Double.parseDouble(measure.labMeasureText.getText()),
                     Double.parseDouble(measure.labAccuracyText.getText()), measure.labNumber));
@@ -120,11 +76,11 @@ public class LaboratoriesTestUI extends JFrame {
         testCase.calculateResults();
     }
 
-
-
     private String createHTMLReport() {
 
         String report = "<html>" + cssStyle + createUUIDText() + "<br><br>";
+
+        report += createMeasurePointNumText() + "<br><br>";
 
         report += "Среднее значение измерений: " + String.format("%.4f", testCase.getMeanValue()) + "<br>";
         report += "Среднеквадратичная погрешность: " + String.format("%.4f", testCase.getMeanSquareError()) + "<br><br>";
@@ -150,8 +106,6 @@ public class LaboratoriesTestUI extends JFrame {
         testResultsPanel.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
 
-        Font font = new Font("ARIAL", Font.BOLD, 20);
-
         JTextPane reportTextPane = new JTextPane();
         reportTextPane.setContentType("text/html"); // let the text pane know this is what you want
         reportTextPane.setText(createHTMLReport()); // showing off
@@ -168,7 +122,6 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridwidth = 2;
         testResultsPanel.add(reportTextPane, c);
 
-
         JButton calculateButton = new JButton("Рассчитать результаты");
         calculateButton.setFont(font);
         calculateButton.addActionListener(new ActionListener() {
@@ -178,7 +131,6 @@ public class LaboratoriesTestUI extends JFrame {
                 reportTextPane.setText(createHTMLReport());
             }
         });
-
 
         c.gridx = 0;
         c.gridy = 1;
@@ -195,7 +147,45 @@ public class LaboratoriesTestUI extends JFrame {
         exportButton.setFont(font);
         testResultsPanel.add(exportButton, c);
 
+        c.gridx = 1;
+        c.gridy = 2;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        JButton nextPointButton = new JButton("Следующая точка");
+        nextPointButton.setEnabled(false);
+        nextPointButton.setFont(font);
+        testResultsPanel.add(nextPointButton, c);
+
+        exportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (exportToPDF()) {
+                    nextPointButton.setEnabled(true);
+                }
+            }
+        });
+
+        nextPointButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                nextPointButton.setEnabled(false);
+                nextPointNumber();
+                mainPanel.removeAll();
+                initMainPanelLayout();
+                cardLayout.show(mainPanel, labPanelString + "1");
+            }
+        });
+
+
         return testResultsPanel;
+    }
+
+    private boolean exportToPDF() {
+        return true;
+    }
+
+    private String createMeasurePointNumText() {
+        return "Точка измерений №" + Integer.toString(pointNumber);
     }
 
     private JPanel createLabResultsPanel(LabMeasure labMeasure) {
@@ -212,13 +202,21 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridheight = 2;
         labResultsPanel.add(createUUIDTextPane(), c);
 
-        Font font = new Font("ARIAL", Font.BOLD, 20);
+        int row = 2;
+        JLabel pointNumLabel = new JLabel(createMeasurePointNumText());
+        pointNumLabel.setHorizontalAlignment(JLabel.CENTER);
+        pointNumLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = row++;
+        c.gridwidth = 2;
+        c.gridheight = 1;
+        labResultsPanel.add(pointNumLabel, c);
 
         JLabel labNumLabel = new JLabel("Измерение лаборатории " + Integer.toString(labMeasure.labNumber));
         labNumLabel.setHorizontalAlignment(JLabel.CENTER);
         labNumLabel.setFont(font);
         c.gridx = 0;
-        c.gridy = 2;
+        c.gridy = row++;
         c.gridwidth = 2;
         c.gridheight = 1;
         labResultsPanel.add(labNumLabel, c);
@@ -226,7 +224,7 @@ public class LaboratoriesTestUI extends JFrame {
         JLabel labMeasureLabel = new JLabel(parameterNameText.getText() + ", " + parameterUnitsText.getText());
         labMeasureLabel.setFont(font);
         c.gridx = 0;
-        c.gridy = 3;
+        c.gridy = row;
         c.gridwidth = 1;
         c.gridheight = 1;
         labResultsPanel.add(labMeasureLabel, c);
@@ -234,25 +232,25 @@ public class LaboratoriesTestUI extends JFrame {
         labMeasure.labMeasureText = new JTextField("");
         labMeasure.labMeasureText.setFont(font);
         c.gridx = 1;
-        c.gridy = 3;
+        c.gridy = row++;
         labResultsPanel.add(labMeasure.labMeasureText, c);
 
 
         JLabel labAccuracyLabel = new JLabel("Неопределённость измерений");
         labAccuracyLabel.setFont(font);
         c.gridx = 0;
-        c.gridy = 4;
+        c.gridy = row;
         labResultsPanel.add(labAccuracyLabel, c);
 
         labMeasure.labAccuracyText = new JTextField("");
         labMeasure.labAccuracyText.setFont(font);
         c.gridx = 1;
-        c.gridy = 4;
+        c.gridy = row++;
         labResultsPanel.add(labMeasure.labAccuracyText, c);
 
 
         c.gridx = 1;
-        c.gridy = 6;
+        c.gridy = row++;
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.PAGE_END;
         labResultsPanel.add(createNextButton(), c);
@@ -266,8 +264,6 @@ public class LaboratoriesTestUI extends JFrame {
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
         c.insets = new Insets(10, 10, 5, 5);
-
-        Font font = new Font("ARIAL", Font.BOLD, 20);
 
         c.gridx = 0;
         c.gridy = 0;
@@ -326,30 +322,63 @@ public class LaboratoriesTestUI extends JFrame {
         c.fill = GridBagConstraints.HORIZONTAL;
         testInfoPanel.add(successCriteriaText, c);
 
+        JLabel pointNumberLabel = new JLabel("Номер начальной точки измерений");
+        pointNumberLabel.setFont(font);
+        c.gridx = 0;
+        c.gridy = 5;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        testInfoPanel.add(pointNumberLabel, c);
+
+        pointNumberText = new JTextField("1");
+        pointNumberText.setFont(font);
+        c.gridx = 1;
+        c.gridy = 5;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        testInfoPanel.add(pointNumberText, c);
+
         JButton nextButton = createNextButton();
+        ActionListener[] listeners = nextButton.getActionListeners();
+        for (ActionListener listener : listeners) {
+            nextButton.removeActionListener(listener);
+        }
         nextButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labMeasures = new ArrayList<>();
-                for (int i = 0; i < Integer.parseInt(labsCountText.getText()); ++i) {
-                    LabMeasure measure = new LabMeasure(i + 1);
-                    labMeasures.add(measure);
-                    mainPanel.add(createLabResultsPanel(measure));
-                }
-                mainPanel.add(createHTMLTestResultsPanel());
+                setPointNumber(Integer.parseInt(pointNumberText.getText()));
+                initMainPanelLayout();
+                cardLayout.show(mainPanel, labPanelString + "1");
             }
         });
         c.gridx = 0;
-        c.gridy = 5;
+        c.gridy = 6;
         c.gridwidth = 2;
         testInfoPanel.add(Box.createVerticalStrut(40), c);
 
         c.gridx = 1;
-        c.gridy = 6;
+        c.gridy = 7;
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.PAGE_END;
         testInfoPanel.add(nextButton, c);
         return testInfoPanel;
+    }
+
+    private void initMainPanelLayout() {
+        testCase = new LabTestCase(0.0);
+        labMeasures = new ArrayList<>();
+        for (int i = 0; i < Integer.parseInt(labsCountText.getText()); ++i) {
+            LabMeasure measure = new LabMeasure(i + 1);
+            labMeasures.add(measure);
+            mainPanel.add(labPanelString + Integer.toString(i + 1), createLabResultsPanel(measure));
+        }
+        mainPanel.add(createHTMLTestResultsPanel());
+    }
+
+    private void setPointNumber(int number) {
+        pointNumber = number;
+    }
+
+    private void nextPointNumber() {
+        pointNumber++;
     }
 
     private void nextView() {
