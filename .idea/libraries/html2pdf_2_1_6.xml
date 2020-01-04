@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="html2pdf-2.1.6">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/html2pdf-2.1.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

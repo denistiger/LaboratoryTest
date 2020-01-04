@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="kernel-7.1.9">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/kernel-7.1.9.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,9 +1,16 @@
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
+import java.util.prefs.Preferences;
 
 public class LaboratoriesTestUI extends JFrame {
 
@@ -24,6 +31,7 @@ public class LaboratoriesTestUI extends JFrame {
     private final String cssStyle = "<p style=\"font-size:16px; text-align:center\">";
     private final String labPanelString = "labPanel";
     private Font font = new Font("ARIAL", Font.BOLD, 20);
+    private static final String LAST_USED_FOLDER="LAST_USED_FOLDER";
 
     private LabTestCase testCase = new LabTestCase(0.0);
 
@@ -181,7 +189,24 @@ public class LaboratoriesTestUI extends JFrame {
     }
 
     private boolean exportToPDF() {
-        return true;
+        Date date = Calendar.getInstance().getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String strDate = dateFormat.format(date);
+        String fileName = "Точка " + Integer.toString(pointNumber) + " " + strDate + ".pdf";
+        Preferences prefs = Preferences.userRoot().node(getClass().getName());
+        String folder = "", folder1 = "";
+        folder = prefs.get(LAST_USED_FOLDER, folder1);
+        folder += File.separator;
+        JFileChooser fileChooser = new JFileChooser(new File(folder + fileName));
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("PDF document", "pdf");
+        fileChooser.setFileFilter(filter);
+
+        fileChooser.setSelectedFile(new File(folder + fileName));
+        if (fileChooser.showSaveDialog(mainPanel) == JFileChooser.APPROVE_OPTION) {
+            prefs.put(LAST_USED_FOLDER, fileChooser.getSelectedFile().getParent());
+            return PDFExport.exportPDF(createHTMLReport(), fileChooser.getSelectedFile());
+        }
+        return false;
     }
 
     private String createMeasurePointNumText() {
