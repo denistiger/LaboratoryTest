@@ -32,6 +32,9 @@ public class LaboratoriesTestUI extends JFrame {
     private final String labPanelString = "labPanel";
     private Font font = new Font("ARIAL", Font.BOLD, 20);
     private static final String LAST_USED_FOLDER="LAST_USED_FOLDER";
+    private static final String PARAMETER_NAME="Измеряемый параметр";
+    private static final String PARAMETER_UNITS="Единицы измерения";
+
 
     private LabTestCase testCase = new LabTestCase(0.0);
 
@@ -88,13 +91,15 @@ public class LaboratoriesTestUI extends JFrame {
 
         String report = "<html>" + cssStyle + createUUIDText() + "<br><br>";
 
-        report += createMeasurePointNumText() + "<br><br>";
+        report += createMeasurePointNumText() + "<br>";
+        report += PARAMETER_NAME + ": " + parameterNameText.getText() + "<br>";
+        report += PARAMETER_UNITS + ": " + parameterUnitsText.getText() + "<br><br>";
 
         report += "Среднее значение измерений: " + String.format("%.4f", testCase.getMeanValue()) + "<br>";
         report += "Среднеквадратичная погрешность: " + String.format("%.4f", testCase.getMeanSquareError()) + "<br><br>";
 
         for (LabTestCase.ValueError measure : testCase.getLabMeasures()) {
-            report += "Лаборатория номер " + Integer.toString(measure.labNumber) + ". ";
+            report += "Испытательная лаборатория №" + Integer.toString(measure.labNumber) + ". ";
             if (testCase.isCalculated()) {
                 report += "Отклонение " + String.format("%.4f", testCase.getDiff(measure)) + ". Оценка результата: " +
                         (testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.");
@@ -296,7 +301,7 @@ public class LaboratoriesTestUI extends JFrame {
         testInfoPanel.add(createUUIDTextPane(), c);
 
 
-        JLabel labsCountLabel = new JLabel("Число лабораторий");
+        JLabel labsCountLabel = new JLabel("Число испытательных лабораторий");
         labsCountLabel.setFont(font);
         c.gridx = 0;
         c.gridy = 1;
@@ -309,7 +314,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = 1;
         testInfoPanel.add(labsCountText, c);
 
-        JLabel measureParamLabel = new JLabel("Измеряемый параметр");
+        JLabel measureParamLabel = new JLabel(PARAMETER_NAME);
         measureParamLabel.setFont(font);
         c.gridx = 0;
         c.gridy = 2;
@@ -321,7 +326,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = 2;
         testInfoPanel.add(parameterNameText, c);
 
-        JLabel measureUnitLabel = new JLabel("Единицы измерения");
+        JLabel measureUnitLabel = new JLabel(PARAMETER_UNITS);
         measureUnitLabel.setFont(font);
         c.gridx = 0;
         c.gridy = 3;
@@ -423,7 +428,7 @@ public class LaboratoriesTestUI extends JFrame {
         UIManager.put("swing.boldMetal", Boolean.FALSE);
 
 
-        setMinimumSize(new Dimension(700, 800));
+        setMinimumSize(new Dimension(900, 800));
 
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
