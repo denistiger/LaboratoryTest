@@ -34,6 +34,7 @@ public class LaboratoriesTestUI extends JFrame {
     private static final String LAST_USED_FOLDER="LAST_USED_FOLDER";
     private static final String PARAMETER_NAME="Измеряемый параметр";
     private static final String PARAMETER_UNITS="Единицы измерения";
+    private static final String MEASURE_ACCURACY="Неопределённость измерения";
 
 
     private LabTestCase testCase = new LabTestCase(0.0);
@@ -89,7 +90,15 @@ public class LaboratoriesTestUI extends JFrame {
 
     private String createHTMLReport() {
 
-        String report = "<html>" + cssStyle + createUUIDText() + "<br><br>";
+        String report = "<html>" + "<head>\n" +
+                "<style>\n" +
+                "table, th, td {\n" +
+                "  border: 1px solid black;\n" +
+                "  border-collapse: collapse;\n" +
+                "}\n" +
+                "</style>\n" +
+                "</head>\n" +
+                "<body>" + cssStyle + createUUIDText() + "<br><br>";
 
         report += createMeasurePointNumText() + "<br>";
         report += PARAMETER_NAME + ": " + parameterNameText.getText() + "<br>";
@@ -98,17 +107,26 @@ public class LaboratoriesTestUI extends JFrame {
         report += "Среднее значение измерений: " + String.format("%.4f", testCase.getMeanValue()) + "<br>";
         report += "Среднеквадратичная погрешность: " + String.format("%.4f", testCase.getMeanSquareError()) + "<br><br>";
 
+        report += "<table style=\"font-size:16px; text-align:center; width:100%\">" +
+                "  <tr>\n" +
+                "    <th>Испытательная<br>лаборатория №</th>\n" +
+                "<th>Измерение</th><th>Неопределённость<br>измерения</th>" +
+                "    <th>Отклонение</th>\n" +
+                "    <th>Оценка<br>результата</th>\n" +
+                "  </tr>";
         for (LabTestCase.ValueError measure : testCase.getLabMeasures()) {
-            report += "Испытательная лаборатория №" + Integer.toString(measure.labNumber) + ". ";
+            report += "<tr style=\"font-size:16px; text-align:center\"><td>" + Integer.toString(measure.labNumber) + "</td>";
             if (testCase.isCalculated()) {
-                report += "Отклонение " + String.format("%.4f", testCase.getDiff(measure)) + ". Оценка результата: " +
-                        (testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.");
+                report += "<td>" + String.format("%.4f", measure.value) + "</td>" +
+                        "<td>" + String.format("%.4f", measure.error) + "</td>" +
+                        "<td>" + String.format("%.4f", testCase.getDiff(measure)) + "</td><td>" +
+                        (testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.") + "</td>";
             }
-            report += "<br>";
+            report += "</tr>";
         }
-        report += "<br>";
+        report += "</table><br>";
 
-        report += "Строка для контрольной суммы MD5:<br>" + testCase.getMd5String() + "<br>";
+        report += cssStyle + "Строка для контрольной суммы MD5:<br>" + testCase.getMd5String() + "<br>";
         report += "MD5 контрольная сумма:<br>" + testCase.getMd5Result() + "<br><br></p></html>";
         return report;
     }
@@ -266,7 +284,7 @@ public class LaboratoriesTestUI extends JFrame {
         labResultsPanel.add(labMeasure.labMeasureText, c);
 
 
-        JLabel labAccuracyLabel = new JLabel("Неопределённость измерений");
+        JLabel labAccuracyLabel = new JLabel(MEASURE_ACCURACY);
         labAccuracyLabel.setFont(font);
         c.gridx = 0;
         c.gridy = row;
@@ -428,7 +446,7 @@ public class LaboratoriesTestUI extends JFrame {
         UIManager.put("swing.boldMetal", Boolean.FALSE);
 
 
-        setMinimumSize(new Dimension(900, 800));
+        setMinimumSize(new Dimension(900, 900));
 
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
