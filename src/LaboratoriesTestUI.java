@@ -1,7 +1,6 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -16,8 +15,8 @@ import java.util.prefs.Preferences;
 
 public class LaboratoriesTestUI extends JFrame {
 
-    private LaboratoriesTestUI(String[] args) {
-        initComponents(args);
+    private LaboratoriesTestUI() {
+        initComponents();
     }
 
     private JTextField labsCountText;
@@ -29,7 +28,7 @@ public class LaboratoriesTestUI extends JFrame {
     private JPanel mainPanel;
     private int pointNumber = 1;
     private ArrayList<LabMeasure> labMeasures = new ArrayList<>();
-    private UUID uuid = UUID.randomUUID();;
+    private UUID uuid = UUID.randomUUID();
     private final String cssStyle = "<p style=\"font-size:16px; text-align:center\">";
     private final String labPanelString = "labPanel";
     private Font font = new Font("ARIAL", Font.BOLD, 20);
@@ -37,12 +36,13 @@ public class LaboratoriesTestUI extends JFrame {
     private static final String PARAMETER_NAME="Измеряемый параметр";
     private static final String PARAMETER_UNITS="Единицы измерения";
     private static final String MEASURE_ACCURACY="Неопределённость измерения";
+    private static final String SUCCESS_CRITERIA = "Критерий оценки";
 
     private interface IVerifier {
         boolean verify(String text);
     }
 
-    private class IntVerifier implements IVerifier {
+    private static class IntVerifier implements IVerifier {
 
         public boolean verify(String text) {
             int num;
@@ -51,19 +51,15 @@ public class LaboratoriesTestUI extends JFrame {
             } catch (NumberFormatException e) {
                 return false;
             }
-            if (num > 0) {
-                return true;
-            }
-            return false;
+            return num > 0;
         }
     }
 
-    private class DoubleVerifier implements IVerifier {
+    private static class DoubleVerifier implements IVerifier {
 
         public boolean verify(String text) {
-            double num;
             try {
-                num = Double.parseDouble(text);
+                Double.parseDouble(text);
             } catch (NumberFormatException e) {
                 return false;
             }
@@ -71,7 +67,7 @@ public class LaboratoriesTestUI extends JFrame {
         }
     }
 
-    private class VerifiedKeyListener implements KeyListener {
+    private static class VerifiedKeyListener implements KeyListener {
 
         private ArrayList<JTextField> textFields;
         private JButton button;
@@ -134,13 +130,7 @@ public class LaboratoriesTestUI extends JFrame {
         nextButton.setFont(font);
         nextButton.setFocusable(false);
         nextButton.setMaximumSize(new Dimension(150, 50));
-
-        nextButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                nextView();
-            }
-        });
+        nextButton.addActionListener(e -> nextView());
         return nextButton;
     }
 
@@ -171,45 +161,44 @@ public class LaboratoriesTestUI extends JFrame {
 
     private String createHTMLReport() {
 
-        String report = "<html>" + "<head>\n" +
-                "<style>\n" +
-                "table, th, td {\n" +
-                "  border: 1px solid black;\n" +
-                "  border-collapse: collapse;\n" +
-                "}\n" +
-                "</style>\n" +
-                "</head>\n" +
-                "<body>" + cssStyle + createUUIDText() + "<br><br>";
+        StringBuilder stringBuilder = new StringBuilder();
 
-        report += createMeasurePointNumText() + "<br>";
-        report += PARAMETER_NAME + ": " + parameterNameText.getText() + "<br>";
-        report += PARAMETER_UNITS + ": " + parameterUnitsText.getText() + "<br><br>";
+        stringBuilder.append(
+                "<html><head>\n<style>\ntable, th, td {\n border: 1px solid black;\n border-collapse: collapse;\n}\n")
+                .append("</style>\n</head>\n<body>").append(cssStyle).append(createUUIDText()).append("<br><br>");
 
-        report += "Среднее значение измерений: " + String.format("%.4f", testCase.getMeanValue()) + "<br>";
-        report += "Среднеквадратичная погрешность: " + String.format("%.4f", testCase.getMeanSquareError()) + "<br><br>";
+        stringBuilder.append(createMeasurePointNumText()).append("<br>");
+        stringBuilder.append(PARAMETER_NAME + ": ").append(parameterNameText.getText()).append("<br>");
+        stringBuilder.append(PARAMETER_UNITS + ": ").append(parameterUnitsText.getText()).append("<br><br>");
 
-        report += "<table style=\"font-size:16px; text-align:center; width:100%\">" +
+        stringBuilder.append("Среднее значение измерений: ").append(String.format("%.4f", testCase.getMeanValue())).append("<br>");
+        stringBuilder.append("Среднеквадратичная погрешность: ").append(String.format("%.4f", testCase.getMeanSquareError())).append("<br>");
+        stringBuilder.append(SUCCESS_CRITERIA).append(": ").append(String.format("%.4f", testCase.getSuccessCriteria())).append("<br><br>");
+
+        stringBuilder.append("<table style=\"font-size:16px; text-align:center; width:100%\">" +
                 "  <tr>\n" +
                 "    <th>Испытательная<br>лаборатория №</th>\n" +
                 "<th>Измерение</th><th>Неопределённость<br>измерения</th>" +
                 "    <th>Отклонение</th>\n" +
                 "    <th>Оценка<br>результата</th>\n" +
-                "  </tr>";
+                "  </tr>");
         for (LabTestCase.ValueError measure : testCase.getLabMeasures()) {
-            report += "<tr style=\"font-size:16px; text-align:center\"><td>" + Integer.toString(measure.labNumber) + "</td>";
+            stringBuilder.append("<tr style=\"font-size:16px; text-align:center\">");
+            stringBuilder.append("<td>").append(measure.labNumber).append("</td>");
             if (testCase.isCalculated()) {
-                report += "<td>" + String.format("%.4f", measure.value) + "</td>" +
-                        "<td>" + String.format("%.4f", measure.error) + "</td>" +
-                        "<td>" + String.format("%.4f", testCase.getDiff(measure)) + "</td><td>" +
-                        (testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.") + "</td>";
+                stringBuilder.append("<td>").append(String.format("%.4f", measure.value)).append("</td>");
+                stringBuilder.append("<td>").append(String.format("%.4f", measure.error)).append("</td>");
+                stringBuilder.append("<td>").append(String.format("%.4f", testCase.getDiff(measure))).append("</td>");
+                stringBuilder.append("<td>").append(
+                        testCase.getDiff(measure) < testCase.getSuccessCriteria() ? " Уд." : " Неуд.").append("</td>");
             }
-            report += "</tr>";
+            stringBuilder.append("</tr>");
         }
-        report += "</table><br>";
+        stringBuilder.append("</table><br>");
 
-        report += cssStyle + "Строка для контрольной суммы MD5:<br>" + testCase.getMd5String() + "<br>";
-        report += "MD5 контрольная сумма:<br>" + testCase.getMd5Result() + "<br><br></p></html>";
-        return report;
+        stringBuilder.append(cssStyle + "Строка для контрольной суммы MD5:<br>").append(testCase.getMd5String()).append("<br>");
+        stringBuilder.append("MD5 контрольная сумма:<br>").append(testCase.getMd5Result()).append("<br><br></p></html>");
+        return stringBuilder.toString();
     }
 
     private JPanel createHTMLTestResultsPanel() {
@@ -218,12 +207,17 @@ public class LaboratoriesTestUI extends JFrame {
         testResultsPanel.setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
 
+
         JTextPane reportTextPane = new JTextPane();
         reportTextPane.setContentType("text/html"); // let the text pane know this is what you want
         reportTextPane.setText(createHTMLReport()); // showing off
         reportTextPane.setEditable(false); // as before
         reportTextPane.setBackground(null); // this is the same as a JLabel
         reportTextPane.setBorder(null);
+        reportTextPane .setMinimumSize(new Dimension(800, 700));
+
+        JScrollPane scrollPane = new JScrollPane(reportTextPane);
+        scrollPane.setMinimumSize(new Dimension(800, 700));
 
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
@@ -232,17 +226,14 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridx = 0;
         c.gridy = 0;
         c.gridwidth = 2;
-        testResultsPanel.add(reportTextPane, c);
+        testResultsPanel.add(scrollPane, c);
 
         JButton calculateButton = new JButton("Рассчитать результаты");
         calculateButton.setFont(font);
-        calculateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
+        calculateButton.addActionListener(e -> {
                 calculateResults();
                 reportTextPane.setText(createHTMLReport());
-            }
-        });
+            });
 
         c.gridx = 0;
         c.gridy = 1;
@@ -268,26 +259,19 @@ public class LaboratoriesTestUI extends JFrame {
         nextPointButton.setFont(font);
         testResultsPanel.add(nextPointButton, c);
 
-        exportButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (exportToPDF()) {
-                    nextPointButton.setEnabled(true);
-                }
+        exportButton.addActionListener(e -> {
+            if (exportToPDF()) {
+                nextPointButton.setEnabled(true);
             }
         });
 
-        nextPointButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                nextPointButton.setEnabled(false);
-                nextPointNumber();
-                mainPanel.removeAll();
-                initMainPanelLayout();
-                cardLayout.show(mainPanel, labPanelString + "1");
-            }
+        nextPointButton.addActionListener(e -> {
+            nextPointButton.setEnabled(false);
+            nextPointNumber();
+            mainPanel.removeAll();
+            initMainPanelLayout();
+            cardLayout.show(mainPanel, labPanelString + "1");
         });
-
 
         return testResultsPanel;
     }
@@ -296,9 +280,9 @@ public class LaboratoriesTestUI extends JFrame {
         Date date = Calendar.getInstance().getTime();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String strDate = dateFormat.format(date);
-        String fileName = "Точка " + Integer.toString(pointNumber) + " " + strDate + ".pdf";
+        String fileName = "Точка " + pointNumber + " " + strDate + ".pdf";
         Preferences prefs = Preferences.userRoot().node(getClass().getName());
-        String folder = "", folder1 = "";
+        String folder, folder1 = "C:\\";
         folder = prefs.get(LAST_USED_FOLDER, folder1);
         folder += File.separator;
         JFileChooser fileChooser = new JFileChooser(new File(folder + fileName));
@@ -314,7 +298,7 @@ public class LaboratoriesTestUI extends JFrame {
     }
 
     private String createMeasurePointNumText() {
-        return "Точка измерений №" + Integer.toString(pointNumber);
+        return "Точка измерений №" + pointNumber;
     }
 
     private JPanel createLabResultsPanel(LabMeasure labMeasure) {
@@ -344,7 +328,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridheight = 1;
         labResultsPanel.add(pointNumLabel, c);
 
-        JLabel labNumLabel = new JLabel("Измерение лаборатории " + Integer.toString(labMeasure.labNumber));
+        JLabel labNumLabel = new JLabel("Измерение лаборатории " + labMeasure.labNumber);
         labNumLabel.setHorizontalAlignment(JLabel.CENTER);
         labNumLabel.setFont(font);
         c.gridx = 0;
@@ -389,7 +373,7 @@ public class LaboratoriesTestUI extends JFrame {
 
 
         c.gridx = 1;
-        c.gridy = row++;
+        c.gridy = row;
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.PAGE_END;
         labResultsPanel.add(nextButton, c);
@@ -450,7 +434,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = 3;
         testInfoPanel.add(parameterUnitsText, c);
 
-        JLabel successCriteriaLabel = new JLabel("Критерий оценки");
+        JLabel successCriteriaLabel = new JLabel(SUCCESS_CRITERIA);
         successCriteriaLabel.setFont(font);
         c.gridx = 0;
         c.gridy = 4;
@@ -485,13 +469,10 @@ public class LaboratoriesTestUI extends JFrame {
         for (ActionListener listener : listeners) {
             startPageNextButton.removeActionListener(listener);
         }
-        startPageNextButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setPointNumber(Integer.parseInt(pointNumberText.getText()));
-                initMainPanelLayout();
-                cardLayout.show(mainPanel, labPanelString + "1");
-            }
+        startPageNextButton.addActionListener(e -> {
+            setPointNumber(Integer.parseInt(pointNumberText.getText()));
+            initMainPanelLayout();
+            cardLayout.show(mainPanel, labPanelString + "1");
         });
         c.gridx = 0;
         c.gridy = 6;
@@ -512,7 +493,7 @@ public class LaboratoriesTestUI extends JFrame {
         for (int i = 0; i < Integer.parseInt(labsCountText.getText()); ++i) {
             LabMeasure measure = new LabMeasure(i + 1);
             labMeasures.add(measure);
-            mainPanel.add(labPanelString + Integer.toString(i + 1), createLabResultsPanel(measure));
+            mainPanel.add(labPanelString + (i + 1), createLabResultsPanel(measure));
         }
         mainPanel.add(createHTMLTestResultsPanel());
     }
@@ -529,7 +510,7 @@ public class LaboratoriesTestUI extends JFrame {
         cardLayout.next(mainPanel);
     }
 
-    private void initComponents(String[] args) {
+    private void initComponents() {
 
         try {
             UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
@@ -542,7 +523,7 @@ public class LaboratoriesTestUI extends JFrame {
         UIManager.put("swing.boldMetal", Boolean.FALSE);
 
 
-        setMinimumSize(new Dimension(900, 900));
+        setMinimumSize(new Dimension(900, 800));
 
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -565,7 +546,7 @@ public class LaboratoriesTestUI extends JFrame {
     }
 
     public static void main(String[] args) {
-        java.awt.EventQueue.invokeLater(() -> new LaboratoriesTestUI(args).setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new LaboratoriesTestUI().setVisible(true));
     }
 
 }
