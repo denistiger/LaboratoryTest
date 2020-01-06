@@ -3,6 +3,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -36,6 +38,85 @@ public class LaboratoriesTestUI extends JFrame {
     private static final String PARAMETER_UNITS="Единицы измерения";
     private static final String MEASURE_ACCURACY="Неопределённость измерения";
 
+    private interface IVerifier {
+        boolean verify(String text);
+    }
+
+    private class IntVerifier implements IVerifier {
+
+        public boolean verify(String text) {
+            int num;
+            try {
+                num = Integer.parseInt(text);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            if (num > 0) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private class DoubleVerifier implements IVerifier {
+
+        public boolean verify(String text) {
+            double num;
+            try {
+                num = Double.parseDouble(text);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private class VerifiedKeyListener implements KeyListener {
+
+        private ArrayList<JTextField> textFields;
+        private JButton button;
+        private IVerifier verifier;
+
+        public VerifiedKeyListener(IVerifier verifier, JTextField textField, JButton button) {
+            this.textFields = new ArrayList<>();
+            textFields.add(textField);
+            this.verifier = verifier;
+            this.button = button;
+        }
+
+        public VerifiedKeyListener(IVerifier verifier, JTextField textField1, JTextField textField2, JButton button) {
+            this.textFields = new ArrayList<>();
+            textFields.add(textField1);
+            textFields.add(textField2);
+            this.verifier = verifier;
+            this.button = button;
+        }
+
+        private void verify() {
+            boolean enabled = true;
+            for (JTextField textField : textFields) {
+                if (!verifier.verify(textField.getText())) {
+                    enabled = false;
+                }
+            }
+            button.setEnabled(enabled);
+        }
+
+        @Override
+        public void keyTyped(KeyEvent e) {
+            verify();
+        }
+
+        @Override
+        public void keyPressed(KeyEvent e) {
+            verify();
+        }
+
+        @Override
+        public void keyReleased(KeyEvent e) {
+            verify();
+        }
+    }
 
     private LabTestCase testCase = new LabTestCase(0.0);
 
@@ -244,6 +325,9 @@ public class LaboratoriesTestUI extends JFrame {
         c.weightx = 0.5;
         c.insets = new Insets(10, 10, 5, 5);
 
+        JButton nextButton = createNextButton();
+        nextButton.setEnabled(false);
+
         c.gridx = 0;
         c.gridy = 0;
         c.gridwidth = 2;
@@ -278,6 +362,13 @@ public class LaboratoriesTestUI extends JFrame {
         labResultsPanel.add(labMeasureLabel, c);
 
         labMeasure.labMeasureText = new JTextField("");
+        labMeasure.labAccuracyText = new JTextField("");
+
+        KeyListener verifiedKeyListener = new VerifiedKeyListener(new DoubleVerifier(),
+                labMeasure.labMeasureText, labMeasure.labAccuracyText, nextButton);
+
+
+        labMeasure.labMeasureText.addKeyListener(verifiedKeyListener);
         labMeasure.labMeasureText.setFont(font);
         c.gridx = 1;
         c.gridy = row++;
@@ -290,7 +381,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = row;
         labResultsPanel.add(labAccuracyLabel, c);
 
-        labMeasure.labAccuracyText = new JTextField("");
+        labMeasure.labAccuracyText.addKeyListener(verifiedKeyListener);
         labMeasure.labAccuracyText.setFont(font);
         c.gridx = 1;
         c.gridy = row++;
@@ -301,7 +392,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = row++;
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.PAGE_END;
-        labResultsPanel.add(createNextButton(), c);
+        labResultsPanel.add(nextButton, c);
 
         return labResultsPanel;
     }
@@ -312,6 +403,8 @@ public class LaboratoriesTestUI extends JFrame {
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
         c.insets = new Insets(10, 10, 5, 5);
+
+        JButton startPageNextButton = createNextButton();
 
         c.gridx = 0;
         c.gridy = 0;
@@ -327,6 +420,7 @@ public class LaboratoriesTestUI extends JFrame {
         testInfoPanel.add(labsCountLabel, c);
 
         labsCountText = new JTextField("3");
+        labsCountText.addKeyListener(new VerifiedKeyListener(new IntVerifier(), labsCountText, startPageNextButton));
         labsCountText.setFont(font);
         c.gridx = 1;
         c.gridy = 1;
@@ -363,7 +457,9 @@ public class LaboratoriesTestUI extends JFrame {
         c.fill = GridBagConstraints.HORIZONTAL;
         testInfoPanel.add(successCriteriaLabel, c);
 
-        successCriteriaText = new JTextField("1");
+        successCriteriaText = new JTextField("1.0");
+        successCriteriaText.addKeyListener(
+                new VerifiedKeyListener(new DoubleVerifier(), successCriteriaText, startPageNextButton));
         successCriteriaText.setFont(font);
         c.gridx = 1;
         c.gridy = 4;
@@ -378,18 +474,18 @@ public class LaboratoriesTestUI extends JFrame {
         testInfoPanel.add(pointNumberLabel, c);
 
         pointNumberText = new JTextField("1");
+        pointNumberText.addKeyListener(new VerifiedKeyListener(new IntVerifier(), pointNumberText, startPageNextButton));
         pointNumberText.setFont(font);
         c.gridx = 1;
         c.gridy = 5;
         c.fill = GridBagConstraints.HORIZONTAL;
         testInfoPanel.add(pointNumberText, c);
 
-        JButton nextButton = createNextButton();
-        ActionListener[] listeners = nextButton.getActionListeners();
+        ActionListener[] listeners = startPageNextButton.getActionListeners();
         for (ActionListener listener : listeners) {
-            nextButton.removeActionListener(listener);
+            startPageNextButton.removeActionListener(listener);
         }
-        nextButton.addActionListener(new ActionListener() {
+        startPageNextButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setPointNumber(Integer.parseInt(pointNumberText.getText()));
@@ -406,7 +502,7 @@ public class LaboratoriesTestUI extends JFrame {
         c.gridy = 7;
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.PAGE_END;
-        testInfoPanel.add(nextButton, c);
+        testInfoPanel.add(startPageNextButton, c);
         return testInfoPanel;
     }
 
